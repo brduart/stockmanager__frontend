@@ -7,9 +7,13 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 
 import Logo from "../../assets/PlayTech.png";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { useLoginMutation } from "@/redux/api/auth";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "@/redux/store";
+import { loginFailure, loginStart, loginSuccess } from "@/redux/features/auth/authSlice";
+import { useEffect } from "react";
 
 const formSchema = z.object({
   email: z.string().min(2, { message: "Email deve ter pelo menos 2 caracteres" }).max(50).email({ message: "Email inválido" }),
@@ -18,6 +22,11 @@ const formSchema = z.object({
 
 const Login = () => {
   const [loginUser] = useLoginMutation();
+
+  const dispatch = useDispatch();
+  const { loading, error, token } = useSelector((state: RootState) => state.auth);
+
+  const navigate = useNavigate();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -28,14 +37,22 @@ const Login = () => {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    dispatch(loginStart());
     try {
       const res = await loginUser(values).unwrap();
+
+      dispatch(loginSuccess(res));
       console.log(res);
     } catch (error) {
-      const err = error as { data: { message: string } };
-      console.log(err.data.message);
+      dispatch(loginFailure((error as any).data || "Login Falhou"));
     }
   }
+
+  useEffect(() => {
+    if (token) {
+      navigate("/logged");
+    }
+  }, [onSubmit]);
   return (
     <>
       <div className="w-full h-full  flex items-center justify-center flex-col">
@@ -80,6 +97,7 @@ const Login = () => {
                 Cadastrar
               </Link>
             </div>
+            {error && <p>{error}</p>}
           </form>
         </Form>
       </div>
