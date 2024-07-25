@@ -50,7 +50,7 @@ const Login = () => {
 
   useEffect(() => {
     if (token) {
-      navigate("/logged");
+      navigate("/main");
     }
   }, [onSubmit]);
   return (
